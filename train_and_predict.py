@@ -76,10 +76,7 @@ def train_and_predict(model_architecture,loss_function,hyperparam_options,
         predictand.trim_dates(predictors.data.time.isel(time=0).values,predictors.data.time.isel(time=-1).values)
         predictand.deseasonalize()
         predictand.resample_fillna(str(temp_freq)+'h')
-        '''
-        import pandas as pd
-        predictand.data.to_csv('test.csv') #save preprocessed predictand data
-        '''
+        
         ### (2) Configure sets of hyperparameters to run with
         all_settings = list(itertools.product(*hyperparam_options))
         n_settings = len(all_settings)
@@ -102,7 +99,9 @@ def train_and_predict(model_architecture,loss_function,hyperparam_options,
                 if model_architecture == 'lstm':
                     model_input.stack_predictor_coords()
                     
-                model_input.split_stratified(split_fractions,this_n_steps,strat_start_month,strat_seed,strat_metric)
+                model_input.split_stratified(split_fractions,this_n_steps,strat_start_month,strat_seed,strat_metric) #stratification scheme
+                #model_input.split_chronological(split_fractions,this_n_steps) # simpler: split chronologically
+                
                 y_train_mean,y_train_sd = model_input.standardize()
         
                 model_input.compute_denseloss_weights(this_dl_alpha) #generate the Denseloss weights for each split
@@ -216,7 +215,7 @@ if __name__ == "__main__":
     #configure standard settings if running main:
     
     #i/o
-    predictor_path  = 'gs://leap-persistent/timh37/era5_predictors/3hourly/' #'gs://leap-persistent/timh37/HighResMIP/surgeNN_predictors/'#
+    predictor_path  = '/home/jovyan/surgeNN/input/era5_predictors/3hourly/' #'gs://leap-persistent/timh37/HighResMIP/surgeNN_predictors/'#
     #predictand_path = '/home/jovyan/surgeNN/input/CoDEC_ERA5_at_gesla3_tgs_eu_hourly_anoms.nc'#'/home/jovyan/surgeNN/input/GTSM_HighResMIP_HadGEM3-GC31-HM_at_gesla3_tgs_stretched_3hourly_rounded10min_after2.nc'
     predictand_path = '/home/jovyan/surgeNN/input/t_tide_3h_hourly_deseasoned_predictands'
     output_dir = '/home/jovyan/surgeNN/results/nns/'
@@ -224,7 +223,7 @@ if __name__ == "__main__":
     temp_freq = 3 # [hours] temporal frequency to use
     
     #training
-    predictor_vars = ['msl','u10','v10','w'] #variables to use
+    predictor_vars = ['msl','u10','v10'] #variables to use
     n_runs = 24 #how many hyperparameter combinations to run
     n_iterations = 1 #how many iterations to run per hyperparameter combination
     n_epochs = 100 #how many training epochs
@@ -241,13 +240,13 @@ if __name__ == "__main__":
     #dl_alpha = np.array([0,1,3,5]).astype('int') #defined from command line
    
     batch_size = np.array([128]).astype('int')
-    n_steps = np.array([9]).astype('int')
+    n_steps = np.array([5]).astype('int')
     n_convlstm = np.array([1]).astype('int')
     n_convlstm_units = np.array([32]).astype('int')
     n_dense = np.array([2]).astype('int')
     n_dense_units = np.array([32]).astype('int')
-    dropout = np.array([0.1,0.2])
-    lrs = np.array([1e-5,5e-5,1e-4])
+    dropout = np.array([0.1])
+    lrs = np.array([5e-5])
     l1s = np.array([0.02])
     
     hyperparam_options = [batch_size, n_steps, n_convlstm, n_convlstm_units,
