@@ -64,13 +64,15 @@ def train_and_predict(model_architecture,loss_function,hyperparam_options,
         
         ### (1) Load & prepare input data
         n_cells = int(predictor_degrees * (4/1)) #determine how many grid cells around TG to use (era5 resolution = 0.25 degree)
+        n_cells = 1 #set this to 1 instead to remove spatial dimensions from the predictor data (overwrites "predictor_degrees" input variable)
         
         predictors = io.Predictor(predictor_path)
         predictors.open_dataset(tg,predictor_vars,n_cells)
         predictors.trim_years(1979,2017)
+        predictors.load_data() #this should load the data into memory once instead of everytime get_windowed_filtered_np_input() is called
         predictors.subtract_annual_means()
         predictors.deseasonalize()
- 
+        
         predictand = io.Predictand(predictand_path)
         predictand.open_dataset(tg)
         predictand.trim_dates(predictors.data.time.isel(time=0).values,predictors.data.time.isel(time=-1).values)
